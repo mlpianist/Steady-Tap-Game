@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Trainer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .game-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            max-width: 500px;
+            width: 90%;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            opacity: 0.8;
+        }
+
+        .status {
+            font-size: 1.3em;
+            margin: 20px 0;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .bpm-display {
+            font-size: 1.1em;
+            margin: 15px 0;
+            opacity: 0.9;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            margin: 20px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+
+        .metronome-visual {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            transition: all 0.1s ease;
+        }
+
+        .metronome-visual.active {
+            background: rgba(255, 255, 255, 0.6);
+            transform: scale(1.1);
+        }
+
+        .start-btn {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            color: white;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            letter-spacing: 1px;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 172, 254, 0.4);
+        }
+
+        .start-btn:disabled {
+            background: rgba(255, 255, 255, 0.3);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .results {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .results.show {
+            display: block;
+        }
+
+        .accuracy-score {
+            font-size: 2em;
+            font-weight: bold;
+            margin: 10px 0;
+            color: #4facfe;
+        }
+
+        .rating {
+            font-size: 1.2em;
+            margin: 10px 0;
+        }
+
+        .instructions {
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .spacebar-hint {
+            font-size: 1.1em;
+            color: #4facfe;
+            font-weight: bold;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .spacebar-hint.show {
+            display: block;
+        }
+
+        .tap-area {
+            width: 100%;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            margin: 20px 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            user-select: none;
+        }
+
+        .tap-area.show {
+            display: flex;
+        }
+
+        .tap-area:active {
+            background: rgba(79, 172, 254, 0.3);
+            transform: scale(0.95);
+        }
+
+        @media (max-width: 768px) {
+            .game-container {
+                padding: 20px;
+                margin: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .spacebar-hint {
+                font-size: 1em;
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .waiting {
+            animation: pulse 1s infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>RHYTHM TRAINER</h1>
+        <p class="subtitle">Test your internal rhythm accuracy</p>
+        
+        <div class="status" id="status">Press START to begin</div>
+        <div class="bpm-display" id="bpm-display"></div>
+        
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+        
+        <div class="metronome-visual" id="metronome">♪</div>
+        
+        <button class="start-btn" id="start-btn" onclick="startGame()">START</button>
+        
+        <div class="spacebar-hint" id="spacebar-hint">Press SPACEBAR with each silent beat</div>
+        <div class="tap-area" id="tap-area">TAP HERE with each silent beat</div>
+        
+        <div class="results" id="results">
+            <h3>Your Performance</h3>
+            <div class="accuracy-score" id="accuracy-score"></div>
+            <div class="rating" id="rating"></div>
+        </div>
+        
+        <div class="instructions">
+            <strong>How to play:</strong><br>
+            1. Press START to hear a metronome (4 beats)<br>
+            2. Continue the rhythm silently by pressing SPACEBAR or tapping the screen 4 times<br>
+            3. Try to match the exact timing of the silent beats<br>
+            4. Get your accuracy score (lower is better!)
+        </div>
+    </div>
+
+    <script>
+        let gameState = 'idle'; // idle, listening, playing, results
+        let bpm = 0;
+        let beatInterval = 0;
+        let currentBeat = 0;
+        let silentClickTimes = [];
+        let playerPressTimes = [];
+        let gameStartTime = 0;
+        let metronomeInterval = null;
+        let audioContext = null;
+
+        const statusEl = document.getElementById('status');
+        const bpmEl = document.getElementById('bpm-display');
+        const progressEl = document.getElementById('progress-fill');
+        const metronomeEl = document.getElementById('metronome');
+        const startBtn = document.getElementById('start-btn');
+        const spacebarHint = document.getElementById('spacebar-hint');
+        const tapArea = document.getElementById('tap-area');
+        const resultsEl = document.getElementById('results');
+        const accuracyEl = document.getElementById('accuracy-score');
+        const ratingEl = document.getElementById('rating');
+
+        // Detect if device supports touch
+        const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+        // Initialize audio context
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // Create metronome click sound
+        function playClick() {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        function startGame() {
+            initAudio();
+            
+            // Generate random BPM
+            bpm = Math.floor(Math.random() * 81) + 60; // 60-140
+            beatInterval = 60000 / bpm; // ms per beat
+            
+            gameState = 'listening';
+            currentBeat = 0;
+            silentClickTimes = [];
+            playerPressTimes = [];
+            gameStartTime = Date.now();
+            
+            statusEl.textContent = 'Listen to the rhythm...';
+            bpmEl.textContent = `${bpm} BPM`;
+            startBtn.disabled = true;
+            resultsEl.classList.remove('show');
+            spacebarHint.classList.remove('show');
+            tapArea.classList.remove('show');
+            
+            // Start metronome
+            playMetronome();
+        }
+
+        function playMetronome() {
+            if (currentBeat < 4) {
+                // Audible beats
+                playClick();
+                metronomeEl.classList.add('active');
+                setTimeout(() => metronomeEl.classList.remove('active'), 100);
+                
+                currentBeat++;
+                progressEl.style.width = (currentBeat / 8) * 100 + '%';
+                
+                // Switch to playing mode on the 4th beat
+                if (currentBeat === 4) {
+                    gameState = 'playing';
+                    statusEl.textContent = 'Now continue the rhythm silently!';
+                    statusEl.classList.add('waiting');
+                    
+                    // Show appropriate input method
+                    if (isTouchDevice) {
+                        tapArea.classList.add('show');
+                    } else {
+                        spacebarHint.classList.add('show');
+                    }
+                    
+                    // Schedule silent clicks starting from the next beat
+                    for (let i = 0; i < 4; i++) {
+                        setTimeout(() => {
+                            silentClickTimes.push(Date.now());
+                            currentBeat++;
+                            progressEl.style.width = (currentBeat / 8) * 100 + '%';
+                            
+                            // Visual feedback for silent beats
+                            metronomeEl.style.opacity = '0.3';
+                            setTimeout(() => metronomeEl.style.opacity = '1', 100);
+                            
+                            if (currentBeat === 8) {
+                                setTimeout(endGame, 1000); // Give time for last spacebar press
+                            }
+                        }, (i + 1) * beatInterval);
+                    }
+                } else {
+                    setTimeout(playMetronome, beatInterval);
+                }
+            }
+        }
+
+        function endGame() {
+            gameState = 'results';
+            statusEl.classList.remove('waiting');
+            spacebarHint.classList.remove('show');
+            tapArea.classList.remove('show');
+            
+            if (playerPressTimes.length === 4) {
+                calculateAccuracy();
+            } else {
+                statusEl.textContent = `You pressed spacebar ${playerPressTimes.length} times (needed 4)`;
+                accuracyEl.textContent = 'Incomplete';
+                ratingEl.textContent = 'Try again and press spacebar 4 times during the silent beats';
+                resultsEl.classList.add('show');
+            }
+            
+            startBtn.disabled = false;
+            progressEl.style.width = '0%';
+            currentBeat = 0;
+        }
+
+        function calculateAccuracy() {
+            let totalError = 0;
+            let errors = [];
+            
+            for (let i = 0; i < 4; i++) {
+                const expectedTime = silentClickTimes[i];
+                const actualTime = playerPressTimes[i];
+                const error = Math.abs(actualTime - expectedTime);
+                errors.push(error);
+                totalError += error;
+            }
+            
+            const averageError = totalError / 4;
+            
+            // Show results
+            accuracyEl.textContent = `${averageError.toFixed(1)}ms`;
+            
+            let rating = '';
+            if (averageError < 50) rating = '🎯 Perfect Timing!';
+            else if (averageError < 100) rating = '🎵 Excellent!';
+            else if (averageError < 150) rating = '👍 Good!';
+            else if (averageError < 250) rating = '👌 Not bad!';
+            else rating = '🎭 Keep practicing!';
+            
+            ratingEl.textContent = rating;
+            statusEl.textContent = 'Game complete!';
+            resultsEl.classList.add('show');
+        }
+
+        // Handle rhythm input (spacebar or touch)
+        function handleRhythmInput() {
+            if (gameState === 'playing' && playerPressTimes.length < 4) {
+                playerPressTimes.push(Date.now());
+                
+                // Visual feedback
+                metronomeEl.style.background = 'rgba(79, 172, 254, 0.6)';
+                setTimeout(() => {
+                    metronomeEl.style.background = 'rgba(255, 255, 255, 0.2)';
+                }, 100);
+            }
+        }
+
+        // Handle spacebar presses
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Space') {
+                e.preventDefault();
+                handleRhythmInput();
+            }
+        });
+
+        // Handle touch/click on tap area
+        tapArea.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            handleRhythmInput();
+        });
+
+        tapArea.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleRhythmInput();
+        });
+
+        // Handle start button with Enter key
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'Enter' && !startBtn.disabled) {
+                startGame();
+            }
+        });
+    </script>
+</body>
+</html>
